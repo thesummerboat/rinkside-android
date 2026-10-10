@@ -1,0 +1,20 @@
+{
+  "_note": "SYNTHETIC example written from cloudflare/overlay.mjs (shlTodayEntry) of the Rinkside web repo. Not real SHL data.",
+  "v": 1,
+  "kind": "shl-today",
+  "source": "www.shl.se",
+  "fetchedAt": "2026-10-10T17:42:40Z",
+  "games": [
+    {"id": "xh68muyldy", "home": "SAIK", "away": "RBK", "start": "2026-10-10T16:00:00.000Z", "ls": "Ongoing",
+     "score": [1, 0], "period": 2, "clock": "06:30", "at": "2026-10-10T17:42:38Z"},
+    {"id": "emdl6a38ir", "home": "SAIK", "away": "FBK", "start": "2026-10-10T16:00:00.000Z", "ls": "PeriodBreak",
+     "score": [3, 3], "period": 3, "clock": "20:00", "at": "2026-10-10T17:42:30Z"},
+    {"id": "h015c0se1o", "home": "RBK", "away": "HV71", "start": "2026-10-10T16:00:00.000Z", "ls": "NotStarted",
+     "score": null, "period": 0, "clock": "", "at": "2026-10-10T15:55:10Z"},
+    {"id": "pqcc7xg1m4", "home": "VLH", "away": "SAIK", "start": "2026-10-10T14:00:00.000Z", "ls": "GameEnded",
+     "score": [2, 3], "period": 4, "clock": "03:41", "at": "2026-10-10T16:30:00Z"},
+    {"id": "s3fwiszzmr", "home": "IFB", "away": "RBK", "start": "2026-10-10T14:00:00.000Z", "ls": "Shootout",
+     "score": [2, 2], "period": 5, "clock": "00:00", "at": "2026-10-10T16:31:00Z"}
+  ],
+  "skipped": 0
+}

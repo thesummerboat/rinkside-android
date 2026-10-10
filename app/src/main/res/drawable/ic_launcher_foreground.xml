@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon foreground (108dp canvas, the safe zone is the centre 66dp): a letter R above a puck. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFE8EEF5"
+        android:strokeWidth="7"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter"
+        android:pathData="M43,64L43,31L55,31A10.5,10.5 0 0 1 55,52L43,52M54,52L66,64" />
+    <path
+        android:fillColor="#FF4AA3FF"
+        android:pathData="M30,70C30,66.7 40.7,64 54,64C67.3,64 78,66.7 78,70L78,76C78,79.3 67.3,82 54,82C40.7,82 30,79.3 30,76Z" />
+    <path
+        android:fillColor="#FF9ED0FF"
+        android:pathData="M54,64C67.3,64 78,66.7 78,70C78,73.3 67.3,76 54,76C40.7,76 30,73.3 30,70C30,66.7 40.7,64 54,64Z" />
+</vector>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Rinkside</string>
+
+    <!-- Inställningar och genvägar -->
+    <string name="settings_title">Notiser</string>
+    <string name="shortcut_settings_short">Notiser</string>
+    <string name="shortcut_settings_long">Notisinställningar</string>
+    <string name="shortcut_test_short">Testa notiser</string>
+    <string name="shortcut_test_long">Testa notiser</string>
+
+    <!-- Notiskanaler -->
+    <string name="channel_start_name">Matchstart</string>
+    <string name="channel_start_desc">En match du följer har startat</string>
+    <string name="channel_goal_name">Mål</string>
+    <string name="channel_goal_desc">Mål i en match du följer</string>
+    <string name="channel_disallowed_name">Bortdömda mål</string>
+    <string name="channel_disallowed_desc">Ett mål dömdes bort</string>
+    <string name="channel_end_name">Slutresultat</string>
+    <string name="channel_end_desc">En match du följer är slut</string>
+    <string name="channel_watch_name">Matchbevakning</string>
+    <string name="channel_watch_desc">Visas medan Rinkside följer matcher i bakgrunden</string>
+
+    <!-- Notiser -->
+    <plurals name="watch_title">
+        <item quantity="one">Rinkside följer %d match</item>
+        <item quantity="other">Rinkside följer %d matcher</item>
+    </plurals>
+    <string name="watch_text_starting">Startar</string>
+    <string name="notif_start_title">Matchstart: %1$s – %2$s</string>
+    <string name="notif_start_text">Matchen är igång.</string>
+    <string name="notif_goal_title">Mål! %1$s %2$d–%3$d %4$s</string>
+    <string name="notif_goal_text">%1$s gjorde mål</string>
+    <string name="notif_disallowed_title">Målet bortdömt: %1$s %2$d–%3$d %4$s</string>
+    <string name="notif_disallowed_text">Ställningen sjönk för %1$s</string>
+    <string name="notif_end_title">Slut: %1$s %2$d–%3$d %4$s</string>
+    <string name="notif_end_text">%1$s vann</string>
+    <string name="decision_ot">förl.</string>
+    <string name="decision_so">str.</string>
+
+    <!-- Inställningar: avsnitt -->
+    <string name="section_status">Status</string>
+    <string name="section_followed">Följda lag</string>
+    <string name="section_games">Nästa matcher</string>
+    <string name="section_watch">Bevakning</string>
+    <string name="section_test">Testa</string>
+    <string name="section_log">Logg</string>
+
+    <!-- Inställningar: statusrader och knappar -->
+    <string name="status_notifications_on">Notiser: tillåtna</string>
+    <string name="status_notifications_off">Notiser: INTE tillåtna</string>
+    <string name="status_exact_on">Exakta alarm: tillåtna</string>
+    <string name="status_exact_off">Exakta alarm: inte tillåtna (väckningen kan komma sent)</string>
+    <string name="status_battery_on">Batterioptimering: Rinkside är undantaget</string>
+    <string name="status_battery_off">Batterioptimering: aktiv (Android kan fördröja saker)</string>
+    <string name="btn_allow_notifications">Tillåt notiser</string>
+    <string name="btn_notification_settings">Notisinställningar</string>
+    <string name="btn_alarm_settings">Alarminställningar</string>
+    <string name="btn_battery_exempt">Undanta från batterioptimering</string>
+    <string name="btn_battery_settings">Batteriinställningar</string>
+
+    <string name="followed_none">Inget lag följs ännu. Öppna Rinkside, följ ett lag med stjärnan och kom sedan tillbaka hit.</string>
+    <string name="followed_not_read">Rinkside har inte läst dina favoriter än. Öppna appen och vänta några sekunder.</string>
+    <string name="followed_updated">Uppdaterad %1$s</string>
+    <string name="games_none">Inga följda matcher de närmaste 8 dagarna.</string>
+
+    <string name="watch_running">Bevakning: igång</string>
+    <string name="watch_idle">Bevakning: vilar (startar 10 minuter före en följd match)</string>
+    <string name="watch_paused">Bevakning: pausad till %1$s</string>
+    <string name="watch_next_alarm">Nästa väckning: %1$s</string>
+    <string name="watch_no_alarm">Nästa väckning: ingen</string>
+    <string name="watch_last_poll">Senaste kontroll: %1$s</string>
+    <string name="watch_never">Senaste kontroll: aldrig</string>
+    <string name="btn_start_watch">Starta bevakning nu</string>
+    <string name="btn_stop_watch">Stoppa bevakning</string>
+    <string name="toast_watch_started">Bevakningen startade</string>
+    <string name="toast_nothing_to_watch">Ingen följd match att bevaka</string>
+    <string name="toast_watch_stopped">Bevakningen är pausad i 6 timmar</string>
+
+    <string name="btn_test_start">Testa: matchstart</string>
+    <string name="btn_test_goal">Testa: mål</string>
+    <string name="btn_test_disallowed">Testa: bortdömt mål</string>
+    <string name="btn_test_end">Testa: matchslut</string>
+    <string name="btn_simulate">Simulera en match</string>
+    <string name="sim_running">Simulering pågår: steg %1$d av %2$d</string>
+    <string name="sim_done">Simuleringen är klar</string>
+    <string name="toast_need_permission">Tillåt notiser först</string>
+    <string name="log_empty">Inget ännu</string>
+</resources>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Rinkside</string>
+
+    <!-- Settings screen and launcher shortcuts -->
+    <string name="settings_title">Notifications</string>
+    <string name="shortcut_settings_short">Notifications</string>
+    <string name="shortcut_settings_long">Notification settings</string>
+    <string name="shortcut_test_short">Test notifications</string>
+    <string name="shortcut_test_long">Test notifications</string>
+
+    <!-- Notification channels -->
+    <string name="channel_start_name">Game start</string>
+    <string name="channel_start_desc">A game you follow has started</string>
+    <string name="channel_goal_name">Goals</string>
+    <string name="channel_goal_desc">A goal in a game you follow</string>
+    <string name="channel_disallowed_name">Disallowed goals</string>
+    <string name="channel_disallowed_desc">A goal was taken off the board</string>
+    <string name="channel_end_name">Final result</string>
+    <string name="channel_end_desc">A game you follow has ended</string>
+    <string name="channel_watch_name">Game watching</string>
+    <string name="channel_watch_desc">Shown while Rinkside follows games in the background</string>
+
+    <!-- Notifications -->
+    <plurals name="watch_title">
+        <item quantity="one">Rinkside is following %d game</item>
+        <item quantity="other">Rinkside is following %d games</item>
+    </plurals>
+    <string name="watch_text_starting">Starting</string>
+    <string name="notif_start_title">Game start: %1$s – %2$s</string>
+    <string name="notif_start_text">The game is on.</string>
+    <string name="notif_goal_title">Goal! %1$s %2$d–%3$d %4$s</string>
+    <string name="notif_goal_text">%1$s scored</string>
+    <string name="notif_disallowed_title">Goal disallowed: %1$s %2$d–%3$d %4$s</string>
+    <string name="notif_disallowed_text">The score for %1$s went down</string>
+    <string name="notif_end_title">Final: %1$s %2$d–%3$d %4$s</string>
+    <string name="notif_end_text">%1$s won</string>
+    <string name="decision_ot">OT</string>
+    <string name="decision_so">SO</string>
+
+    <!-- Settings screen: sections -->
+    <string name="section_status">Status</string>
+    <string name="section_followed">Followed teams</string>
+    <string name="section_games">Next games</string>
+    <string name="section_watch">Watching</string>
+    <string name="section_test">Test</string>
+    <string name="section_log">Log</string>
+
+    <!-- Settings screen: status lines and buttons -->
+    <string name="status_notifications_on">Notifications: allowed</string>
+    <string name="status_notifications_off">Notifications: NOT allowed</string>
+    <string name="status_exact_on">Exact alarms: allowed</string>
+    <string name="status_exact_off">Exact alarms: not allowed (wake-ups may be late)</string>
+    <string name="status_battery_on">Battery optimisation: Rinkside is exempt</string>
+    <string name="status_battery_off">Battery optimisation: active (Android may delay things)</string>
+    <string name="btn_allow_notifications">Allow notifications</string>
+    <string name="btn_notification_settings">Notification settings</string>
+    <string name="btn_alarm_settings">Alarm settings</string>
+    <string name="btn_battery_exempt">Exempt from battery optimisation</string>
+    <string name="btn_battery_settings">Battery settings</string>
+
+    <string name="followed_none">No team is followed yet. Open Rinkside, follow a team with the star, then come back here.</string>
+    <string name="followed_not_read">Rinkside has not read your favourites yet. Open the app and wait a few seconds.</string>
+    <string name="followed_updated">Updated %1$s</string>
+    <string name="games_none">No followed games in the next 8 days.</string>
+
+    <string name="watch_running">Watching: running</string>
+    <string name="watch_idle">Watching: idle (starts 10 minutes before a followed game)</string>
+    <string name="watch_paused">Watching: paused until %1$s</string>
+    <string name="watch_next_alarm">Next wake-up: %1$s</string>
+    <string name="watch_no_alarm">Next wake-up: none</string>
+    <string name="watch_last_poll">Last check: %1$s</string>
+    <string name="watch_never">Last check: never</string>
+    <string name="btn_start_watch">Start watching now</string>
+    <string name="btn_stop_watch">Stop watching</string>
+    <string name="toast_watch_started">Watching started</string>
+    <string name="toast_nothing_to_watch">No followed game to watch</string>
+    <string name="toast_watch_stopped">Watching paused for 6 hours</string>
+
+    <string name="btn_test_start">Test: game start</string>
+    <string name="btn_test_goal">Test: goal</string>
+    <string name="btn_test_disallowed">Test: disallowed goal</string>
+    <string name="btn_test_end">Test: game end</string>
+    <string name="btn_simulate">Simulate a game</string>
+    <string name="sim_running">Simulation running: step %1$d of %2$d</string>
+    <string name="sim_done">Simulation finished</string>
+    <string name="toast_need_permission">Allow notifications first</string>
+    <string name="log_empty">Nothing yet</string>
+</resources>

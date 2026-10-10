@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static launcher shortcuts (long-press the app icon). Both open the native "Notiser" screen. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="notifications"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_bell"
+        android:shortcutShortLabel="@string/shortcut_settings_short"
+        android:shortcutLongLabel="@string/shortcut_settings_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="se.jonasp.rinkside"
+            android:targetClass="se.jonasp.rinkside.SettingsActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="test_notifications"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_play"
+        android:shortcutShortLabel="@string/shortcut_test_short"
+        android:shortcutLongLabel="@string/shortcut_test_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="se.jonasp.rinkside"
+            android:targetClass="se.jonasp.rinkside.SettingsActivity">
+            <extra
+                android:name="section"
+                android:value="test" />
+        </intent>
+    </shortcut>
+</shortcuts>

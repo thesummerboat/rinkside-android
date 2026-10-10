@@ -1,0 +1,23 @@
+{
+  "_note": "SYNTHETIC example written from cloudflare/overlay.mjs (normalizeNhlToday / nhlGame) of the Rinkside web repo. Not real NHL data.",
+  "v": 1,
+  "kind": "nhl-today",
+  "source": "api-web.nhle.com",
+  "fetchedAt": "2026-10-10T21:30:15.000Z",
+  "days": ["2026-10-10"],
+  "games": [
+    {"id": 2026020500, "home": "DET", "away": "TOR", "start": "2026-10-10T23:00:00Z", "state": "live", "raw": "LIVE",
+     "score": [2, 1], "period": 2, "clock": "08:14", "intermission": false, "decision": null},
+    {"id": 2026020501, "home": "BOS", "away": "NYR", "start": "2026-10-10T23:00:00Z", "state": "live", "raw": "LIVE",
+     "score": [0, 0], "period": 1, "clock": "12:00", "intermission": false, "decision": null},
+    {"id": 2026020502, "home": "MTL", "away": "OTT", "start": "2026-10-10T20:00:00Z", "state": "finished", "raw": "OFF",
+     "score": [3, 2], "period": 4, "clock": "", "intermission": false, "decision": "OT"},
+    {"id": 2026020503, "home": "SEA", "away": "VAN", "start": "2026-10-11T02:00:00Z", "state": "scheduled", "raw": "FUT",
+     "score": null, "period": 0, "clock": "", "intermission": false, "decision": null},
+    {"id": 2026020504, "home": "CGY", "away": "EDM", "start": "2026-10-11T01:00:00Z", "state": "postponed", "raw": "FUT",
+     "score": null, "period": 0, "clock": "", "intermission": false, "decision": null},
+    {"id": 2026020505, "home": "LAK", "away": "SJS", "start": "2026-10-10T20:00:00Z", "state": "finished", "raw": "OFF",
+     "score": [4, 3], "period": 5, "clock": "", "intermission": false, "decision": "SO"}
+  ],
+  "skipped": 0
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome notification icon: a hockey puck seen from the side (white, the system tints it). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,4C7,4 3,5.8 3,8L3,16C3,18.2 7,20 12,20C17,20 21,18.2 21,16L21,8C21,5.8 17,4 12,4ZM12,6C15.9,6 19,7.1 19,8C19,8.9 15.9,10 12,10C8.1,10 5,8.9 5,8C5,7.1 8.1,6 12,6Z" />
+</vector>

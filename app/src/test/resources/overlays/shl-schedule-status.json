@@ -1,0 +1,15 @@
+{
+  "_note": "SYNTHETIC example written from cloudflare/overlay.mjs (normalizeShlSchedule) of the Rinkside web repo. Not real SHL data.",
+  "v": 1,
+  "kind": "shl-schedule-status",
+  "source": "www.shl.se",
+  "fetchedAt": "2026-10-10T18:05:00Z",
+  "ssgtUuid": "synthetic-season-1",
+  "gameType": "regular",
+  "games": [
+    {"id": "xh68muyldy", "home": "SAIK", "away": "RBK", "start": "2026-10-10T16:00:00.000Z", "state": "finished", "score": [3, 2], "decision": "OT"},
+    {"id": "emdl6a38ir", "home": "SAIK", "away": "FBK", "start": "2026-10-10T16:00:00.000Z", "state": "live", "score": [3, 3], "decision": null},
+    {"id": "pqcc7xg1m4", "home": "VLH", "away": "SAIK", "start": "2026-10-10T14:00:00.000Z", "state": "finished", "score": [2, 3], "decision": null}
+  ],
+  "skipped": 0
+}

@@ -1,0 +1,24 @@
+{
+  "_note": "SYNTHETIC example of what assets/read-favourites.js returns (shape checked against the web app's real D.matches records).",
+  "ready": true,
+  "at": 1791648000000,
+  "teams": ["saik", "det"],
+  "leagues": ["shl", "nhl"],
+  "teamNames": {"saik": "Skellefteå", "det": "Detroit"},
+  "games": [
+    {"id": "shl-xh68muyldy", "league": "shl", "source": "shl", "status": "scheduled", "start": "2026-10-10T16:00:00.000Z", "startMs": 1791648000000,
+     "home": "saik", "away": "rbk", "homeName": "Skellefteå", "awayName": "Rögle", "homeCode": "SAIK", "awayCode": "RBK",
+     "nhlId": null, "shlId": "xh68muyldy", "gameType": 2},
+    {"id": "nhl-2026020500", "league": "nhl", "source": "nhl", "status": "scheduled", "start": "2026-10-10T23:00:00Z", "startMs": 1791673200000,
+     "home": "det", "away": "tor", "homeName": "Detroit", "awayName": "Toronto", "homeCode": "DET", "awayCode": "TOR",
+     "nhlId": 2026020500, "shlId": null, "gameType": 2},
+    {"id": "ha-9056", "league": "ha", "source": "ha", "status": "scheduled", "start": "2026-10-10T17:00:00.000Z", "startMs": 1791651600000,
+     "home": "ha-aik", "away": "ha-lif", "homeName": "AIK", "awayName": "Leksand", "homeCode": "AIK", "awayCode": "LIF",
+     "nhlId": null, "shlId": null, "gameType": 2},
+    {"id": "liiga-77", "league": "liiga", "source": "demo", "status": "scheduled", "start": "2026-10-10T17:00:00.000Z", "startMs": 1791651600000,
+     "home": "x", "away": "y", "homeName": "X", "awayName": "Y", "homeCode": "", "awayCode": "", "nhlId": null, "shlId": null, "gameType": 2},
+    {"id": "nhl-bad", "league": "nhl", "source": "nhl", "status": "scheduled", "start": "2026-10-10T23:00:00Z", "startMs": 1791673200000,
+     "home": "det", "away": "tor", "homeName": "Detroit", "awayName": "Toronto", "homeCode": "DET", "awayCode": "TOR",
+     "nhlId": null, "shlId": null, "gameType": 2}
+  ]
+}

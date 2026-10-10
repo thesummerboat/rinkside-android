@@ -1,0 +1,16 @@
+{
+  "_note": "SYNTHETIC example written from cloudflare/overlay.mjs (sweEntry) of the Rinkside web repo. Not real HockeyAllsvenskan / Hockeyettan data.",
+  "v": 1,
+  "kind": "swe-today",
+  "source": "hockeyallsvenskan.se, api.hockeyettan.se",
+  "fetchedAt": "2026-10-10T18:20:05Z",
+  "games": [
+    {"id": "ha-9056", "league": "ha", "home": "ha-aik", "away": "ha-lif", "start": "2026-10-10T17:00:00.000Z", "state": "live",
+     "score": [1, 1], "period": 2, "intermission": true, "periods": [[1, 0], [0, 1]], "so": null, "decision": null, "at": "2026-10-10T18:20:00Z"},
+    {"id": "et-1113459", "league": "ettan", "home": "et-119105", "away": "et-119104", "start": "2026-10-10T15:00:00.000Z", "state": "finished",
+     "score": [3, 4], "period": 0, "intermission": false, "periods": [[3, 0], [0, 2], [0, 1], [0, 0]], "so": [0, 1], "decision": "SO", "at": "2026-10-10T17:45:00Z"},
+    {"id": "ha-9057", "league": "ha", "home": "ha-khc", "away": "ha-aik", "start": "2026-10-10T19:00:00.000Z", "state": "scheduled",
+     "score": null, "period": 0, "intermission": false, "periods": null, "so": null, "decision": null, "at": "2026-10-10T18:19:00Z"}
+  ],
+  "skipped": 0
+}
