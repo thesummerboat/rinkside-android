@@ -16,10 +16,13 @@ import se.jonasp.rinkside.engine.WatchedGame
 
 /** Channels and notifications. Real events and the test buttons both come through [post], so a test shows exactly what a real one would. */
 object Notifier {
-    const val CHANNEL_START = "start"
+    // Every match event pops up on the screen (heads-up, importance high). Android never lets an app raise the importance of a channel it already
+    // created, so the channels that 0.1.x made with default importance get new ids (..._alert) and the old ones are deleted.
+    const val CHANNEL_START = "start_alert"
     const val CHANNEL_GOAL = "goal"
-    const val CHANNEL_DISALLOWED = "disallowed"
-    const val CHANNEL_END = "end"
+    const val CHANNEL_DISALLOWED = "disallowed_alert"
+    const val CHANNEL_END = "end_alert"
+    private val OLD_CHANNELS = listOf("start", "disallowed", "end")
     const val CHANNEL_WATCH = "watch"
     const val WATCH_NOTIFICATION_ID = 1
 
@@ -30,6 +33,7 @@ object Notifier {
 
     fun ensureChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
+        for (old in OLD_CHANNELS) if (nm.getNotificationChannel(old) != null) nm.deleteNotificationChannel(old)
         fun channel(id: String, name: Int, desc: Int, importance: Int, quiet: Boolean) {
             val c = NotificationChannel(id, ctx.getString(name), importance)
             c.description = ctx.getString(desc)
@@ -40,10 +44,10 @@ object Notifier {
             }
             nm.createNotificationChannel(c)
         }
-        channel(CHANNEL_START, R.string.channel_start_name, R.string.channel_start_desc, NotificationManager.IMPORTANCE_DEFAULT, false)
+        channel(CHANNEL_START, R.string.channel_start_name, R.string.channel_start_desc, NotificationManager.IMPORTANCE_HIGH, false)
         channel(CHANNEL_GOAL, R.string.channel_goal_name, R.string.channel_goal_desc, NotificationManager.IMPORTANCE_HIGH, false)
-        channel(CHANNEL_DISALLOWED, R.string.channel_disallowed_name, R.string.channel_disallowed_desc, NotificationManager.IMPORTANCE_DEFAULT, false)
-        channel(CHANNEL_END, R.string.channel_end_name, R.string.channel_end_desc, NotificationManager.IMPORTANCE_DEFAULT, false)
+        channel(CHANNEL_DISALLOWED, R.string.channel_disallowed_name, R.string.channel_disallowed_desc, NotificationManager.IMPORTANCE_HIGH, false)
+        channel(CHANNEL_END, R.string.channel_end_name, R.string.channel_end_desc, NotificationManager.IMPORTANCE_HIGH, false)
         channel(CHANNEL_WATCH, R.string.channel_watch_name, R.string.channel_watch_desc, NotificationManager.IMPORTANCE_LOW, true)
     }
 
