@@ -1,6 +1,8 @@
 name: Build
 
-# Push to main:      unit tests + debug APK (uploaded as a workflow artifact).
+# Push to main:      unit tests + debug APK (uploaded as a workflow artifact). If the version in the VERSION file has no GitHub Release yet,
+#                    a SIGNED release APK is built and published as Release v<VERSION> (the tag is created by GitHub at this commit).
+#                    So a new release = change VERSION (e.g. 0.1.0 -> 0.1.1) and push to main.
 # Push of tag v*:    unit tests, then a SIGNED release APK that is attached to a GitHub Release (rinkside-<version>.apk).
 # workflow_dispatch: same as a push of the branch or tag it is started on.
 on:
@@ -55,7 +57,7 @@ jobs:
   release:
     name: Signed release APK
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -67,8 +69,27 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
+      # Which release this run makes: the pushed tag, or on main "v" + the VERSION file. On main nothing is done when that release already exists.
+      - name: Decide the release
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="$GITHUB_REF_NAME"; MODE=tag
+          else
+            TAG="v$(tr -d ' \r\n' < VERSION)"; MODE=main
+          fi
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "RELEASE_MODE=$MODE" >> "$GITHUB_ENV"
+          if [ "$MODE" = main ] && gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists; nothing to publish (change VERSION to make a new one)."
+            echo "SKIP_RELEASE=true" >> "$GITHUB_ENV"
+          else
+            echo "SKIP_RELEASE=false" >> "$GITHUB_ENV"
+            echo "Making release $TAG ($MODE)."
+          fi
+
       # A release is only ever built with the real release key. Without all four secrets the job stops here, before anything is built or published.
       - name: Check signing secrets
+        if: env.SKIP_RELEASE != 'true'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -79,6 +100,11 @@ jobs:
           for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
             if [ -z "${!name}" ]; then missing="$missing $name"; fi
           done
+          if [ -n "$missing" ] && [ "$RELEASE_MODE" = main ]; then
+            echo "::warning title=Signing secrets missing::No release was made because these repository secrets are missing:$missing. Add them under Settings > Secrets and variables > Actions and push again."
+            echo "SKIP_RELEASE=true" >> "$GITHUB_ENV"
+            exit 0
+          fi
           if [ -n "$missing" ]; then
             echo "::error title=Signing secrets missing::These repository secrets are empty or missing:$missing. Add them under Settings > Secrets and variables > Actions, then run this workflow again. No release was built or published (an unsigned or debug-signed release is never published)."
             exit 1
@@ -86,8 +112,9 @@ jobs:
           echo "All four signing secrets are present."
 
       - name: Work out the version from the tag
+        if: env.SKIP_RELEASE != 'true'
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${RELEASE_TAG}"
           VERSION="${TAG#v}"
           re='^([0-9]+)\.([0-9]+)\.([0-9]+)([-+].*)?$'
           if ! [[ "$VERSION" =~ $re ]]; then
@@ -105,15 +132,18 @@ jobs:
           echo "Version $VERSION, versionCode $CODE"
 
       - name: Set up JDK 17
+        if: env.SKIP_RELEASE != 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Gradle
+        if: env.SKIP_RELEASE != 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Decode the keystore
+        if: env.SKIP_RELEASE != 'true'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -128,9 +158,11 @@ jobs:
           echo "ANDROID_KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
 
       - name: Unit tests
+        if: env.SKIP_RELEASE != 'true'
         run: ./gradlew --stacktrace testReleaseUnitTest
 
       - name: Build the signed release APK
+        if: env.SKIP_RELEASE != 'true'
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -138,6 +170,7 @@ jobs:
         run: ./gradlew --stacktrace assembleRelease -PversionName="$VERSION" -PversionCode="$VERSION_CODE"
 
       - name: Verify that the APK is signed with the release key
+        if: env.SKIP_RELEASE != 'true'
         run: |
           APK="$(ls app/build/outputs/apk/release/*.apk | head -n 1)"
           case "$APK" in
@@ -153,14 +186,17 @@ jobs:
           ls -l "rinkside-${VERSION}.apk"
 
       - name: Create the GitHub Release
+        if: env.SKIP_RELEASE != 'true'
         run: |
           APK="rinkside-${VERSION}.apk"
           flags=()
           case "$VERSION" in
             *-*) flags+=(--prerelease) ;;
           esac
-          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "$APK" --clobber
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$APK" --clobber
+          elif [ "$RELEASE_MODE" = tag ]; then
+            gh release create "$RELEASE_TAG" "$APK" --title "$RELEASE_TAG" --generate-notes --verify-tag "${flags[@]}"
           else
-            gh release create "$GITHUB_REF_NAME" "$APK" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag "${flags[@]}"
+            gh release create "$RELEASE_TAG" "$APK" --title "$RELEASE_TAG" --generate-notes --target "$GITHUB_SHA" "${flags[@]}"
           fi

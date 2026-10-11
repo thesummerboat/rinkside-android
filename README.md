@@ -86,14 +86,9 @@ Releases are built by GitHub Actions (`.github/workflows/build.yml`).
 
 The keystore is **not** in this repository and must never be committed (`*.jks` and `*.keystore` are git-ignored). Keep a backup: Android refuses to update an installed app that is signed with a different key, so losing the keystore means every user has to uninstall and reinstall.
 
-**For each release:** push a tag.
+**For each release:** change the version in the `VERSION` file (e.g. `0.1.0` -> `0.1.1`) and push to `main`. When no GitHub Release `v<VERSION>` exists yet, the workflow makes it (GitHub creates the tag at that commit). Pushing a tag `vX.Y.Z` works too.
 
-```sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-The workflow runs the unit tests, builds a **signed** release APK with `versionName` taken from the tag and `versionCode = major*1000000 + minor*1000 + patch`, checks with `apksigner` that it is signed and not debug-signed, and creates a GitHub Release named after the tag with the APK attached as `rinkside-<version>.apk`. If one of the secrets is missing the job fails with a clear message; an unsigned or debug-signed release is never published.
+The workflow runs the unit tests, builds a **signed** release APK with `versionName` taken from the tag and `versionCode = major*1000000 + minor*1000 + patch`, checks with `apksigner` that it is signed and not debug-signed, and creates a GitHub Release named after the tag with the APK attached as `rinkside-<version>.apk`. If one of the secrets is missing, a tag build fails with a clear message and a push to main only warns and makes no release; an unsigned or debug-signed release is never published.
 
 Every push to `main` (and every manual run) builds the unit tests and a **debug** APK, uploaded as a workflow artifact (`rinkside-debug-apk`). Debug APKs are signed with a throw-away debug key, so they cannot update a release install; use them only for quick testing.
 

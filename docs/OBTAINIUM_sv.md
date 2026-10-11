@@ -81,11 +81,6 @@ Uppdateringen går bara att installera om den är signerad med samma nyckel som 
 
 ## För den som släpper nya versioner
 
-En ny version släpps genom att skapa en tagg på GitHub:
+En ny version släpps genom att ändra versionsnumret i filen `VERSION` (till exempel `0.1.0` till `0.1.1`) och skicka upp ändringen till `main`. Finns det ingen release med det numret ännu, bygger GitHub en. (Att skicka upp en tagg `vX.Y.Z` fungerar också.)
 
-```
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-GitHub bygger då en signerad app och lägger den under **Releases**, där Obtainium hittar den. Byggets fyra hemligheter (nyckelfilen och lösenorden) ska ligga under *Settings → Secrets and variables → Actions*. De finns beskrivna i `README.txt` som hör till nyckelfilen. Saknas någon, avbryts bygget med ett tydligt felmeddelande, och ingen osignerad app publiceras.
+GitHub bygger då en signerad app och lägger den under **Releases**, där Obtainium hittar den. Byggets fyra hemligheter (nyckelfilen och lösenorden) ska ligga under *Settings → Secrets and variables → Actions*. De finns beskrivna i `README.txt` som hör till nyckelfilen. Saknas någon görs ingen release (bygget varnar), och ingen osignerad app publiceras.
