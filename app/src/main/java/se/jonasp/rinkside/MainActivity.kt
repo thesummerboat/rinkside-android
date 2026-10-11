@@ -36,6 +36,10 @@ class MainActivity : Activity() {
 
         // The site defers its scripts: the globals may not exist yet right after onPageFinished, so ask again a few times.
         private val RETRY_DELAYS_MS = longArrayOf(800L, 2_500L, 6_000L, 12_000L, 25_000L, 45_000L)
+
+        // While the app is open the followed teams and games are read again this often, so a star tapped during a live game
+        // (follow or unfollow that one game) reaches the watch service within seconds, not only when the app is left.
+        private const val PERIODIC_READ_MS = 8_000L
     }
 
     private lateinit var webView: WebView
@@ -44,6 +48,13 @@ class MainActivity : Activity() {
     private var attempt = 0
     private val retryRead = Runnable { readFavourites(retry = true) }
     private val pauseWebView = Runnable { webView.onPause() }
+    private var lastFollowKey: String? = null
+    private val periodicRead = object : Runnable {
+        override fun run() {
+            refreshIfChanged()
+            ui.postDelayed(this, PERIODIC_READ_MS)
+        }
+    }
     private val baseHost: String = Uri.parse(BuildConfig.BASE_URL).host ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,6 +180,18 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Saves the followed games only when the list changed (teams or game ids), so the alarm is not set again every few seconds. */
+    private fun refreshIfChanged() {
+        runReadScript { snapshot ->
+            if (snapshot == null) return@runReadScript
+            val key = snapshot.teams.joinToString(",") + "|" + snapshot.games.joinToString(",") { it.id }
+            if (key == lastFollowKey) return@runReadScript
+            lastFollowKey = key
+            Store.saveSnapshot(this, snapshot)
+            Scheduler.scheduleNext(this)
+        }
+    }
+
     private fun runReadScript(callback: (Snapshot?) -> Unit) {
         val script = readScript ?: loadReadScript()
         if (script == null) {
@@ -208,10 +231,13 @@ class MainActivity : Activity() {
         super.onResume()
         ui.removeCallbacks(pauseWebView)
         webView.onResume()
+        ui.removeCallbacks(periodicRead)
+        ui.postDelayed(periodicRead, PERIODIC_READ_MS)
     }
 
     override fun onPause() {
         // The favourites may have changed while the app was open: read them once more before the page is paused.
+        ui.removeCallbacks(periodicRead)
         readFavourites(retry = false)
         ui.postDelayed(pauseWebView, 1_500L)
         super.onPause()

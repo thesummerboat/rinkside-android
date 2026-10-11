@@ -2,7 +2,7 @@
   // Rinkside Android: reads the followed teams and their games from the web app. Runs inside the page via
   // WebView.evaluateJavascript and returns ONE JSON string; it never changes anything on the page.
   // Everything is guarded, so a change in the web app can only make this return {ready:false}, never throw.
-  // Globals used (dist/core.js, dist/app.js): prefs (let), D (const), team(id), gameTypeOf(m).
+  // Globals used (dist/core.js, dist/app.js): prefs (let), D (const), team(id), gameTypeOf(m), isFollowed(m) when present.
   try {
     if (typeof prefs === 'undefined' || typeof D === 'undefined' || !prefs || !D || !Array.isArray(D.matches)) {
       return JSON.stringify({ ready: false });
@@ -14,6 +14,7 @@
     var teams = strings(prefs.teams, 200);
     var leagues = strings(prefs.leagues, 50);
     var followedMatches = strings(prefs.matches, 200);
+    var mutedMatches = strings(prefs.mutedMatches, 500); // games of a followed team that were unfollowed one by one
     var lookup = function (id) {
       try { return typeof team === 'function' ? team(id) : null; } catch (e) { return null; }
     };
@@ -36,7 +37,10 @@
         var source = m.source;
         if (source !== 'nhl' && source !== 'shl' && source !== 'ha' && source !== 'ettan') return; // real leagues only, no demo data
         if (m.status === 'postponed' || m.cancelled) return;
-        var followed = teams.indexOf(m.home) >= 0 || teams.indexOf(m.away) >= 0 || followedMatches.indexOf(m.id) >= 0;
+        // The web app's own rule when it has one (isFollowed, dist/core.js); otherwise: a starred game, or a game of a followed team not unfollowed by itself.
+        var followed;
+        try { followed = typeof isFollowed === 'function' ? !!isFollowed(m) : null; } catch (e) { followed = null; }
+        if (followed === null) followed = followedMatches.indexOf(m.id) >= 0 || ((teams.indexOf(m.home) >= 0 || teams.indexOf(m.away) >= 0) && mutedMatches.indexOf(m.id) < 0);
         if (!followed) return;
         var start = Date.parse(m.start);
         if (!isFinite(start) || start < from || start > to) return;
