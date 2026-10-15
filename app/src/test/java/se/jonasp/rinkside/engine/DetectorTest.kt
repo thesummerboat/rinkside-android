@@ -135,16 +135,133 @@ class DetectorTest {
     }
 
     @Test
-    fun aDisallowedGoalFollowedByTheSameGoalIsAnnouncedAgain() {
+    fun aGoalIsAnnouncedOncePerScoreLine() {
+        // one cue per score line, like the web app: a goal that is taken off and scored again does not blink twice
         val events = run(live(0, 0, T0), live(1, 0, T0 + 1_000), live(0, 0, T0 + 2_000), live(1, 0, T0 + 3_000))
         assertEquals(
-            listOf<GameEvent>(
-                GameEvent.Goal(g, 1, 0, Side.HOME),
-                GameEvent.GoalDisallowed(g, 0, 0, Side.HOME),
-                GameEvent.Goal(g, 1, 0, Side.HOME),
-            ),
+            listOf<GameEvent>(GameEvent.Goal(g, 1, 0, Side.HOME), GameEvent.GoalDisallowed(g, 0, 0, Side.HOME)),
             events.filter { it !is GameEvent.MatchStart },
         )
+    }
+
+    @Test
+    fun aDisallowedGoalIsAnnouncedOncePerDrop() {
+        val events = run(
+            live(0, 0, T0),
+            live(1, 0, T0 + 1_000), // announced
+            live(0, 0, T0 + 2_000), // disallowed
+            live(1, 0, T0 + 3_000), // back: the line 1-0 was announced
+            live(0, 0, T0 + 4_000), // the same drop again
+            live(0, 1, T0 + 5_000), // a different line: announced
+        )
+        assertEquals(
+            listOf<GameEvent>(GameEvent.Goal(g, 1, 0, Side.HOME), GameEvent.GoalDisallowed(g, 0, 0, Side.HOME), GameEvent.Goal(g, 0, 1, Side.AWAY)),
+            events.filter { it !is GameEvent.MatchStart },
+        )
+        // a score that was already there when the watch began was never announced, so its first goal-back is news
+        val late = run(live(1, 0, T0), live(0, 0, T0 + 1_000), live(1, 0, T0 + 2_000))
+        assertEquals(listOf<GameEvent>(GameEvent.GoalDisallowed(g, 0, 0, Side.HOME), GameEvent.Goal(g, 1, 0, Side.HOME)), late)
+    }
+
+    @Test
+    fun theAwaySideHasOneCuePerLineAndPerDropToo() {
+        val events = run(
+            live(0, 0, T0),
+            live(0, 1, T0 + 1_000), // announced
+            live(0, 0, T0 + 2_000), // disallowed
+            live(0, 1, T0 + 3_000), // back: the line 0-1 was announced
+            live(0, 0, T0 + 4_000), // the same drop again
+        )
+        assertEquals(
+            listOf<GameEvent>(GameEvent.Goal(g, 0, 1, Side.AWAY), GameEvent.GoalDisallowed(g, 0, 0, Side.AWAY)),
+            events.filter { it !is GameEvent.MatchStart },
+        )
+    }
+
+    @Test
+    fun theAnnouncedLinesAreRememberedAcrossARestart() {
+        val first = GameTracker()
+        first.process(listOf(g), listOf(live(0, 0, T0)), T0 + 60_000L)
+        first.process(listOf(g), listOf(live(1, 0, T0 + 1_000)), T0 + 61_000L)
+        first.process(listOf(g), listOf(live(0, 0, T0 + 2_000)), T0 + 62_000L)
+        val restored = GameTracker(MemoryJson.read(MemoryJson.write(first.memory())))
+        assertEquals(setOf("1-0"), restored.memory().getValue("g1").goalLines)
+        assertEquals(setOf("1-0>0-0"), restored.memory().getValue("g1").dropLines)
+        assertTrue(restored.process(listOf(g), listOf(live(1, 0, T0 + 3_000)), T0 + 63_000L).isEmpty())
+        assertEquals(1, restored.process(listOf(g), listOf(live(1, 1, T0 + 4_000)), T0 + 64_000L).size)
+    }
+
+    @Test
+    fun aMissedStretchMarksOnlyItsFinalLine() {
+        val tracker = GameTracker()
+        tracker.process(listOf(g), listOf(live(0, 0, T0)), T0 + 60_000L)
+        tracker.process(listOf(g), listOf(live(4, 2, T0 + 1_000, period = 3)), T0 + 61_000L)
+        assertEquals(setOf("4-2"), tracker.memory().getValue("g1").goalLines)
+    }
+
+    @Test
+    fun theMemoryKeepsOnlyTheLatestLines() {
+        val tracker = GameTracker()
+        tracker.process(listOf(g), listOf(live(0, 0, T0)), T0 + 60_000L)
+        for (n in 1..(Detector.MAX_CUES + 20)) {
+            val h = n / 2 + n % 2
+            val a = n / 2
+            tracker.process(listOf(g), listOf(live(minOf(h, 99), minOf(a, 99), T0 + n * 1_000L)), T0 + 60_000L + n * 1_000L)
+        }
+        assertTrue(tracker.memory().getValue("g1").goalLines.size <= Detector.MAX_CUES)
+    }
+
+    // ---- readings from the stream ----
+
+    private fun stream(h: Int, a: Int, at: Long, gameSec: Int? = null, state: GameState = GameState.LIVE, period: Int = 1) =
+        Observation("g1", state, h, a, period, null, false, at, gameSec, fromStream = true)
+
+    private fun overlay(h: Int, a: Int, at: Long, gameSec: Int? = null) = Observation("g1", GameState.LIVE, h, a, 1, null, false, at, gameSec)
+
+    @Test
+    fun theStreamNeverStartsAGame() {
+        val tracker = GameTracker()
+        assertTrue(tracker.process(listOf(g), listOf(stream(1, 0, T0)), T0 + 60_000L).isEmpty())
+        assertTrue(tracker.memory().isEmpty())
+        // the overlay's first reading is the baseline, whatever the stream said before
+        assertTrue(tracker.process(listOf(g), listOf(overlay(2, 0, T0)), T0 + 61_000L).isEmpty())
+        assertEquals(1, tracker.process(listOf(g), listOf(stream(3, 0, T0 + 62_000L)), T0 + 62_000L).size)
+    }
+
+    @Test
+    fun anOverlayWithinTheLagWindowAfterTheStreamCannotLowerTheScore() {
+        val tracker = GameTracker()
+        tracker.process(listOf(g), listOf(overlay(0, 0, T0)), T0 + 60_000L)
+        assertEquals(1, tracker.process(listOf(g), listOf(stream(1, 0, T0 + 61_000L)), T0 + 61_000L).size)
+        // the Worker's reading is older than the stream's message, whatever the clocks say
+        assertTrue(tracker.process(listOf(g), listOf(overlay(0, 0, T0 + 5_000)), T0 + 70_000L).isEmpty())
+        assertEquals(1, tracker.memory().getValue("g1").home)
+        // ...but the same reading after the window is a disallowed goal
+        val late = tracker.process(listOf(g), listOf(overlay(0, 0, T0 + 6_000)), T0 + 61_000L + Detector.OVERLAY_LAG_MS)
+        assertEquals(listOf<GameEvent>(GameEvent.GoalDisallowed(g, 0, 0, Side.HOME)), late)
+    }
+
+    @Test
+    fun aStreamReadingWithAnEarlierGameTimeIsStale() {
+        val tracker = GameTracker()
+        tracker.process(listOf(g), listOf(overlay(2, 0, T0, gameSec = 1500)), T0 + 60_000L)
+        assertTrue(tracker.process(listOf(g), listOf(stream(1, 0, T0 + 61_000L, gameSec = 900)), T0 + 61_000L).isEmpty())
+        assertEquals(2, tracker.memory().getValue("g1").home)
+        // the same game time is not stale: the clock stands still during a review
+        val drop = tracker.process(listOf(g), listOf(stream(1, 0, T0 + 62_000L, gameSec = 1500)), T0 + 62_000L)
+        assertEquals(listOf<GameEvent>(GameEvent.GoalDisallowed(g, 1, 0, Side.HOME)), drop)
+    }
+
+    @Test
+    fun theStreamAndTheOverlayKeepTheirOwnTimes() {
+        val tracker = GameTracker()
+        tracker.process(listOf(g), listOf(overlay(0, 0, T0)), T0 + 60_000L)
+        tracker.process(listOf(g), listOf(stream(1, 0, T0 + 3_600_000L)), T0 + 3_600_000L) // a device clock an hour ahead of the Worker's
+        val m = tracker.memory().getValue("g1")
+        assertEquals(T0, m.readAtMs) // the overlay's time is not moved by the stream
+        assertEquals(T0 + 3_600_000L, m.streamAtMs)
+        // an overlay reading with the Worker's own (older) time is still read: the clocks are not compared
+        assertEquals(1, tracker.process(listOf(g), listOf(overlay(1, 1, T0 + 1_000)), T0 + 3_700_000L).size)
     }
 
     @Test

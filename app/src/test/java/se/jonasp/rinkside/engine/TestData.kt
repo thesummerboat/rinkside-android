@@ -10,6 +10,24 @@ object TestData {
         return stream.use { it.readBytes().toString(Charsets.UTF_8) }
     }
 
+    fun streamResource(name: String): String {
+        val stream = TestData::class.java.getResourceAsStream("/stream/$name")
+            ?: throw IllegalStateException("missing test resource stream/$name")
+        return stream.use { it.readBytes().toString(Charsets.UTF_8) }
+    }
+
+    /** Timrå - HV71 of 2026-10-15, the game of the lines seen on the stream (club codes as the web app knows them). */
+    val tik = WatchedGame(
+        id = "shl-x0ws1h01an", league = "shl", startMs = T0,
+        homeId = "shl-tik", awayId = "shl-hv71", homeName = "Timrå", awayName = "HV71", homeCode = "TIK", awayCode = "HV71", shlId = "x0ws1h01an",
+    )
+
+    /** Skellefteå - Färjestad of 2026-10-08, the game of the web fixture scripts/fixtures/shl-live-game.json. */
+    val saikFbk = WatchedGame(
+        id = "shl-emdl6a38ir", league = "shl", startMs = T0,
+        homeId = "shl-saik", awayId = "shl-fbk", homeName = "Skellefteå", awayName = "Färjestad", homeCode = "SAIK", awayCode = "FBK", shlId = "emdl6a38ir",
+    )
+
     val nhl = WatchedGame(
         id = "nhl-2026020500", league = "nhl", startMs = 1_791_673_200_000L,
         homeId = "det", awayId = "tor", homeName = "Detroit", awayName = "Toronto", homeCode = "DET", awayCode = "TOR", nhlId = 2026020500L,

@@ -56,7 +56,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Polls the Rinkside site every 15 seconds while a followed hockey game is on, to post goal, start and end notifications" />
+                android:value="Polls the Rinkside site every 15 seconds and listens to the SHL's public live score stream while a followed hockey game is on, to post goal, start and end notifications" />
         </service>
 
         <receiver

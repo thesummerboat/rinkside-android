@@ -1,0 +1,29 @@
+: SYNTHETIC transcript for the unit tests, shaped like the lines seen on the SHL stream on 2026-10-15 (an SSE comment line, ignored by readers). Not a recording.
+retry: 3000
+
+id: 27001
+data: {"source":"genius-basketball-stream-reader","gameId":512344,"homeTeam":{"name":"Home"},"awayTeam":{"name":"Away"},"homeScore":41,"awayScore":38,"period":2}
+
+id: 27002
+data: {"gameOverview":{"gameUuid":"x0ws1h01an","homeTeam":{"gameSourceId":"20261015-TIK-HV71","gameId":23061,"place":"home","score":0,"teamId":"TIK","teamName":"Timrå IK","teamCode":"","gameUuid":"x0ws1h01an"},"awayTeam":{"gameSourceId":"20261015-TIK-HV71","gameId":23061,"place":"away","score":0,"teamId":"HV71","teamName":"HV71","teamCode":"","gameUuid":"x0ws1h01an"},"homeGoals":1,"awayGoals":0,"state":"Ongoing","time":{"period":1,"periodTime":"07:12"}}}
+
+id: 27003
+data: {"gameScorer":{"type":"goal","gameUuid":"x0ws1h01an","period":1,"time":"07:12","eventId":9,"awayTeamValue":0,"homeTeamValue":1,"teamDetails":{"teamName":"Timrå IK","teamCode":"TIK","belongsTo":"home"},"scorer":"A. Skater","assist":[],"goalStatus":"EQ"}}
+
+: keep-alive
+
+id: 27004
+data: {"gameOverview":
+data: {"gameUuid":"x0ws1h01an",
+data:  "homeTeam":{"teamId":"TIK","teamCode":"","gameUuid":"x0ws1h01an","score":0},
+data:  "awayTeam":{"teamId":"HV71","teamCode":"","gameUuid":"x0ws1h01an","score":0},
+data:  "homeGoals":1,"awayGoals":1,"state":"Ongoing","time":{"period":2,"periodTime":"03:40"}}}
+
+id: 27005
+data: {"gameScorer":{"type":"goal","gameUuid":"blr9i7wd72","period":2,"time":"15:53","eventId":81,"awayTeamValue":0,"homeTeamValue":3,"teamDetails":{"teamName":"IF Malmö Redhawks","teamCode":"MIF","belongsTo":"home"},"scorer":"Janne Kuokkanen","assist":[],"goalStatus":"EQ"}}
+
+data: not json at all
+
+id: 27006
+data: {"gameOverview":{"gameUuid":"x0ws1h01an","homeGoals":null}}
+

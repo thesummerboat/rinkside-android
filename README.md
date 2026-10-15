@@ -6,7 +6,7 @@ It shows the web app full screen and adds one thing a web page cannot do reliabl
 | Event | Notification (English / Swedish) |
 | --- | --- |
 | Match start | `Game start: Home – Away` / `Matchstart: Home – Away` |
-| Goal | `Goal! Home 2–1 Away` / `Mål! Home 2–1 Away` (one notification per goal) |
+| Goal | `Goal! Home 2–1 Away` / `Mål! Home 2–1 Away` (one notification per goal; for SHL goals the text also names the scorer and the game time, `Home scored · Name (35:53)`) |
 | Disallowed goal (the score goes down) | `Goal disallowed: Home 1–1 Away` / `Målet bortdömt: Home 1–1 Away` |
 | Match end | `Final: Home 3–2 Away` / `Slut: Home 3–2 Away`, with `OT` / `SO` (`förl.` / `str.` in Swedish) when it went past regulation time |
 
@@ -20,17 +20,20 @@ Texts are shown in Swedish when the phone language is Swedish and in English oth
    If you follow no team, nothing is scheduled and no notification is ever sent. The settings screen says so.
 2. **An exact alarm starts the watcher.** The app schedules an alarm 10 minutes before the next followed game (`setExactAndAllowWhileIdle`; if the phone refuses exact alarms it falls back to `setAndAllowWhileIdle`). The alarm is re-created after a reboot and after the app is updated.
 3. **A foreground service polls the live data.** `GameWatchService` shows a quiet, low-importance ongoing notification (`Rinkside följer N matcher`) and fetches the *same live overlay files the web app itself uses*, from `<site>/api/live/<name>.json`, every 15 seconds. Only the overlays needed for the games being watched are fetched (`nhl-today`, `shl-today`, `swe-today`, `shl-schedule-status`).
+   **SHL games also get the live stream.** While at least one watched SHL game is inside its watch window, the service holds one connection to the SHL's public live score stream (`https://game-broadcaster.s8y.se/live/game`, Server-Sent Events), the same stream the web app reads. A goal arrives there within seconds, where the overlay files are up to about a minute behind (the Worker refreshes them every 30 seconds). The overlay polling goes on in parallel: it is the fallback when the stream is down, and it carries match start and end for the other leagues and the NHL.
 4. **A pure Kotlin engine decides what happened.** `app/src/main/java/se/jonasp/rinkside/engine/` has no Android dependencies and is covered by JVM unit tests. The first reading of a game only initialises its state (so opening the watcher mid-game does not spam you). After that:
    - scheduled → live gives *match start*;
    - the score going up gives one *goal* per goal;
    - the score going down gives *goal disallowed*;
    - live → finished gives *match end* with the final score (and OT/SO).
    Per-game state is persisted before notifications are posted, so a restarted service never repeats a notification.
+   The stream and the overlays feed this same engine, so a goal that one of them announced is never announced again by the other. A goal is identified by the game and its score line (`2-1`), and one score line gives one notification, as in the web app; a score that goes down is announced once per drop (`2-1>1-1`). Both sets are persisted with the game state.
+   When the stream connects it first replays recent messages, old goals included. That replay is never treated as news: it only fills in scorer names. Only a game the overlay files have already started can be followed by the stream, so a game that was half over when the watch began does not announce its earlier goals.
 5. **The service stops itself** when all watched games are finished (or given up) and schedules the next alarm.
 
 Tapping a notification opens the app on that match (`<site>/#match/<id>`).
 
-Scorer names are not available in the live overlay files, so the goal notification shows only the score and the scoring team. There is a `TODO(scorer)` hook in `Notifier.kt` for the day the data has them.
+Scorer names are not in the overlay files, only in the live stream. A goal that the stream announces carries the scorer and the cumulative game time (a goal at 15:53 in the second period shows as `35:53`). When the overlay is first to see a goal, the notification is posted without a name and updated in place (without a new sound) if the stream names the scorer a moment later. Goals in the other leagues and in the NHL have no scorer.
 
 ## The settings screen "Notiser"
 
@@ -41,6 +44,7 @@ Long-press the launcher icon and choose **Notiser** or **Testa notiser** (static
 - whether Rinkside is exempt from battery optimisation (with a button),
 - the followed teams and the next followed games,
 - the watcher state, last poll time and a short event log,
+- the live stream: off (no SHL game on), connecting, connected (with the time of the last message about a followed game) or reconnecting (attempt number and next try),
 - test buttons: **Testa: matchstart**, **Testa: mål**, **Testa: bortdömt mål**, **Testa: matchslut**,
 - **Simulera en match**: plays a scripted SHL game (start, 1-0, 2-0, disallowed goal, 1-1, overtime, 2-1 final) through the *real* parser and detection engine, one step every 3 seconds, and posts real notifications,
 - **Starta bevakning nu**: starts the watcher immediately for the followed games.
@@ -51,7 +55,7 @@ On Android 13 and later the app asks for notification permission the first time 
 
 ## Privacy
 
-- The app talks to **one host only: the Rinkside site** (`BuildConfig.BASE_URL`), both in the WebView and for the live overlay files. Links to any other host open in the phone's browser instead.
+- The app talks to **two hosts**: the Rinkside site (`BuildConfig.BASE_URL`), both in the WebView and for the live overlay files, and, only while a followed SHL game is on, the SHL's public live stream at `game-broadcaster.s8y.se` (the stream the web app reads too; no account or key, nothing is sent but the request itself). That host sees the phone's IP address and a `RinksideAndroid/<version>` User-Agent. Links to any other host open in the phone's browser instead.
 - **No Google services, no Firebase, no analytics, no crash reporting, no ads, no push service.** Notifications are produced locally on the phone from the live files it fetches itself.
 - The app has **no third-party runtime libraries** at all, only the Android framework. (JUnit and `org.json` are used by the unit tests only.)
 - Followed teams and per-game state are stored in the app's private storage and are not sent anywhere. Android backup is disabled for the app.
@@ -94,10 +98,12 @@ Every push to `main` (and every manual run) builds the unit tests and a **debug*
 
 ## Limits and honest caveats
 
-- **Polling, not push.** There is no push server. The app polls the live files every 15 seconds, but only while a followed game is on (from 10 minutes before the start until the game is finished, at most 4 hours after the start). Between games the app does nothing at all.
+- **Polling, not push.** There is no push server. The app polls the live files every 15 seconds, but only while a followed game is on (from 10 minutes before the start until the game is finished, at most 4 hours after the start). Between games the app does nothing at all. SHL games add one open connection to the live stream for the same period, inside the same foreground service and under the same wake lock (no extra permission, no extra service). If it drops, it reconnects after 2, 5, 10 and 30 seconds and then every 60 seconds; a connection that is silent for 90 seconds is treated as dead. While the stream is down, goals come from the overlay files as before.
 - **Android may delay or kill things.** Under battery saver, aggressive manufacturer task killers or without the battery-optimisation exemption, the alarm and the service can be delayed or stopped. The settings screen shows the relevant states; allow exact alarms, exempt the app from battery optimisation, and allow notifications for the best result. A watchdog alarm restarts the service if it is killed during a game.
-- **Notification delay.** A notification can be at best as fresh as the live data on the Rinkside server, plus up to 15 seconds of polling. It is not a replacement for a live-score service during very fast sequences.
-- **Disallowed goals** are detected only as "the score went down". A goal that is scored and removed between two polls (within 15 seconds) is not seen at all.
+- **Notification delay.** For SHL goals the stream makes it a matter of seconds. For everything else a notification can be at best as fresh as the live data on the Rinkside server (refreshed every 30 seconds), plus up to 15 seconds of polling, so about a minute. It is not a replacement for a live-score service during very fast sequences.
+- **The stream is an unofficial feed.** It is not documented by the SHL and may change or go away; the app then falls back to the overlay files. A goal scored in the first seconds after a (re)connection may reach you through the overlay files rather than the stream, since the replay of old messages is held back while it lasts.
+- **One notification per score line.** If a goal is disallowed and the same score is reached again, the second one is silent (the web app does the same).
+- **Disallowed goals** are detected only as "the score went down". In an SHL game the stream makes a goal that is scored and removed within seconds visible; elsewhere, a goal that is scored and removed between two polls (within 15 seconds) is not seen at all.
 - **Shootouts** do not produce goal notifications; the final score and `SO` are shown at the end.
 - **Followed teams are read from the web app.** If you change what you follow, open the app once so the list is refreshed (it is also refreshed when the app goes to the background).
 - Only the leagues listed above are watched, and only teams you follow.
@@ -116,7 +122,7 @@ Requirements: JDK 17 and the Android SDK (platform 35).
 ./gradlew assembleDebug       # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The detection engine (`engine/`) and its tests need no Android SDK. The tests use synthetic overlay payloads in `app/src/test/resources/overlays/`, shaped like the real ones; each file is marked with a `_note` saying so.
+The detection engine (`engine/`) and its tests need no Android SDK. The tests use synthetic overlay payloads in `app/src/test/resources/overlays/`, shaped like the real ones; each file is marked with a `_note` saying so. The stream tests use `app/src/test/resources/stream/`: a trimmed copy of the web app's own `shl-live-game.json` fixture and a replay burst in the SSE wire format. The real stream could not be reached while this was written, so its message shapes come from the web app's reader and from lines supplied by the maintainer.
 
 ## Project layout
 
@@ -124,14 +130,16 @@ The detection engine (`engine/`) and its tests need no Android SDK. The tests us
 app/src/main/java/se/jonasp/rinkside/
   MainActivity.kt        WebView, favourites snapshot, deep links
   SettingsActivity.kt    the "Notiser" screen
-  GameWatchService.kt    foreground service, 15 s polling loop
+  GameWatchService.kt    foreground service, 15 s polling loop, owns the live stream
+  LiveStream.kt          the SHL live stream connection (HttpURLConnection, back-off, status)
   Scheduler.kt           exact alarms (+ watchdog / retry)
   AlarmReceiver.kt  BootReceiver.kt
   Notifier.kt            channels and notification texts
   OverlayHttp.kt         HttpURLConnection fetch of the overlay files
   Simulator.kt           the "Simulera en match" playback
   Store.kt               SharedPreferences
-  engine/                pure Kotlin: parser, detector, watch plan, snapshot, simulation script
+  engine/                pure Kotlin: parser, detector, watch plan, snapshot, simulation script,
+                         ShlStream (SSE reader and stream parser), StreamFeed (replay burst, de-dup), GameClock
 app/src/main/assets/read-favourites.js
 app/src/test/            JUnit 4 tests and synthetic example payloads
 docs/OBTAINIUM_sv.md     Swedish install guide

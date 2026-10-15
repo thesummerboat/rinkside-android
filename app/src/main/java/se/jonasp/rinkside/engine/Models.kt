@@ -50,17 +50,36 @@ data class Observation(
     val decision: String?,
     /** True while a regular-season shootout is being played: its scores are not goals. */
     val shootout: Boolean,
-    /** When the server read the game (overlay fetchedAt, or the entry's own "at"); used so an older reading never wins. */
+    /**
+     * When the server read the game (overlay fetchedAt, or the entry's own "at"); used so an older reading never wins.
+     * For a reading from the live stream ([fromStream]) it is the device time the message arrived: the two clocks are never compared.
+     */
     val readAtMs: Long,
+    /** Elapsed game time in seconds ((period - 1) * 1200 + the period clock), when the source gave a clock. Orders readings of one game across sources. */
+    val gameSec: Int? = null,
+    /** True for a reading from the SHL live stream, false for one from an overlay. */
+    val fromStream: Boolean = false,
 )
 
-/** What the engine remembers per game between two readings (persisted by the app so a service restart repeats nothing). */
+/**
+ * What the engine remembers per game between two readings (persisted by the app so a service restart repeats nothing).
+ *
+ * @param readAtMs    the newest overlay reading that was applied (the Worker's clock)
+ * @param streamAtMs  the device time of the newest stream reading that was applied; null while the stream has not spoken for this game
+ * @param gameSec     the newest elapsed game time seen in either source
+ * @param goalLines   the score lines ("2-1") a Goal was announced for: one cue per score line, whichever source saw it first
+ * @param dropLines   the score drops ("2-1>1-1") a GoalDisallowed was announced for
+ */
 data class GameMemory(
     val state: GameState,
     val home: Int?,
     val away: Int?,
     val readAtMs: Long,
     val shootout: Boolean,
+    val streamAtMs: Long? = null,
+    val gameSec: Int? = null,
+    val goalLines: Set<String> = emptySet(),
+    val dropLines: Set<String> = emptySet(),
 )
 
 sealed class GameEvent {
@@ -68,8 +87,21 @@ sealed class GameEvent {
 
     data class MatchStart(override val game: WatchedGame) : GameEvent()
 
-    /** A side scored; [home] and [away] are the new score. */
-    data class Goal(override val game: WatchedGame, val home: Int, val away: Int, val side: Side) : GameEvent()
+    /**
+     * A side scored; [home] and [away] are the new score. [scorer] and [gameSec] (elapsed game time) are filled in when the live stream
+     * has told who scored; the overlays do not carry them.
+     */
+    data class Goal(
+        override val game: WatchedGame,
+        val home: Int,
+        val away: Int,
+        val side: Side,
+        val scorer: String? = null,
+        val gameSec: Int? = null,
+    ) : GameEvent() {
+        /** The score line this goal makes, the key of "one cue per score line". */
+        val line: String get() = "$home-$away"
+    }
 
     /** A side's score went down; [home] and [away] are the new score. */
     data class GoalDisallowed(override val game: WatchedGame, val home: Int, val away: Int, val side: Side) : GameEvent()

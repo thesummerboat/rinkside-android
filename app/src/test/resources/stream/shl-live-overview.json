@@ -1,0 +1,33 @@
+{
+  "_note": "The 'overview' object copied verbatim from the Rinkside web repo, scripts/fixtures/shl-live-game.json (SAIK-FBK, 2026-10-08, real SHL data). The stream's gameOverview message has this shape. Note homeTeam.score is 0 while homeGoals is 1: the nested score is stale, homeGoals/awayGoals are the score.",
+  "overview": {
+    "gameUuid": "emdl6a38ir",
+    "homeTeam": {
+      "gameSourceId": "20261008-SAIK-FBK",
+      "gameId": 23046,
+      "place": "home",
+      "score": 0,
+      "teamId": "SAIK",
+      "teamName": "Skellefteå AIK",
+      "teamCode": "",
+      "gameUuid": "emdl6a38ir"
+    },
+    "awayTeam": {
+      "gameSourceId": "20261008-SAIK-FBK",
+      "gameId": 23046,
+      "place": "away",
+      "score": 0,
+      "teamId": "FBK",
+      "teamName": "Färjestad BK",
+      "teamCode": "",
+      "gameUuid": "emdl6a38ir"
+    },
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "state": "Ongoing",
+    "time": {
+      "period": 3,
+      "periodTime": "01:51"
+    }
+  }
+}

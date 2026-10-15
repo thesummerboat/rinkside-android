@@ -72,6 +72,7 @@ class SettingsActivity : Activity() {
     private lateinit var followedText: TextView
     private lateinit var gamesText: TextView
     private lateinit var watchText: TextView
+    private lateinit var streamText: TextView
     private lateinit var simulateButton: Button
     private lateinit var logText: TextView
 
@@ -127,6 +128,8 @@ class SettingsActivity : Activity() {
         column.addView(header(getString(R.string.section_watch)))
         watchText = text("", 15f, textColor)
         column.addView(watchText)
+        streamText = text("", 15f, textColor)
+        column.addView(streamText)
         column.addView(button(getString(R.string.btn_start_watch)) { onStartWatch() })
         column.addView(button(getString(R.string.btn_stop_watch)) { onStopWatch() })
 
@@ -235,11 +238,29 @@ class SettingsActivity : Activity() {
             },
         )
         watchText.text = lines.joinToString("\n")
+        streamText.text = streamLine()
 
         simulateButton.isEnabled = !Simulator.running
 
         val log = Store.logLines(this)
         logText.text = if (log.isEmpty()) getString(R.string.log_empty) else log.takeLast(25).reversed().joinToString("\n")
+    }
+
+    /** The state of the SHL live stream: off, connecting, connected (with the time of the last message about a followed game) or reconnecting. */
+    private fun streamLine(): String {
+        if (!GameWatchService.running) return getString(R.string.stream_off)
+        return when (StreamStatus.state) {
+            StreamStatus.State.OFF -> getString(R.string.stream_off)
+            StreamStatus.State.CONNECTING -> getString(R.string.stream_connecting)
+            StreamStatus.State.CONNECTED -> {
+                val last = StreamStatus.lastGameMessageAtMs
+                getString(R.string.stream_connected, if (last > 0L) formatClock(last) else getString(R.string.stream_no_message))
+            }
+            StreamStatus.State.WAITING -> {
+                val line = getString(R.string.stream_waiting, StreamStatus.failures, formatClock(StreamStatus.retryAtMs))
+                if (StreamStatus.lastError.isEmpty()) line else line + "\n" + StreamStatus.lastError
+            }
+        }
     }
 
     private fun gameLine(g: WatchedGame, state: GameState?): String {
@@ -252,6 +273,8 @@ class SettingsActivity : Activity() {
     }
 
     private fun formatDateTime(ms: Long): String = SimpleDateFormat("EEE d MMM HH:mm", Locale.getDefault()).format(Date(ms))
+
+    private fun formatClock(ms: Long): String = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(ms))
 
     // ---- buttons ----
 

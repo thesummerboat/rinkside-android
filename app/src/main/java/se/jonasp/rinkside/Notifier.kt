@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import java.util.concurrent.atomic.AtomicInteger
+import se.jonasp.rinkside.engine.GameClock
 import se.jonasp.rinkside.engine.GameEvent
 import se.jonasp.rinkside.engine.Side
 import se.jonasp.rinkside.engine.WatchedGame
@@ -62,28 +63,51 @@ object Notifier {
         return nm.areNotificationsEnabled()
     }
 
+    /** A notification that was posted, kept by the caller so that a goal can get the scorer's name afterwards (see [update]). */
+    class Handle(val id: Int, val whenMs: Long)
+
     /** Posts the notification for [event]. Returns false when Android would not show it (the reason goes to the log). */
-    fun post(ctx: Context, event: GameEvent): Boolean {
+    fun post(ctx: Context, event: GameEvent): Boolean = postEvent(ctx, event) != null
+
+    /** Like [post], but returns the posted notification, or null when Android would not show it. */
+    fun postEvent(ctx: Context, event: GameEvent): Handle? {
         val app = ctx.applicationContext
         ensureChannels(app)
         if (!canPost(app)) {
             Store.log(app, "Notification blocked by Android (permission or settings): " + describe(event))
-            return false
+            return null
         }
+        val nm = app.getSystemService(NotificationManager::class.java) ?: return null
+        val handle = Handle(nextId.incrementAndGet(), System.currentTimeMillis())
+        nm.notify(handle.id, build(app, event, handle, onlyAlertOnce = false))
+        return handle
+    }
+
+    /**
+     * Rewrites a notification that is still showing, for the goal whose scorer was not known when it was posted. It does not alert a second
+     * time. Returns false when the notification is gone (dismissed, or never shown), in which case nothing is posted.
+     */
+    fun update(ctx: Context, handle: Handle, event: GameEvent): Boolean {
+        val app = ctx.applicationContext
         val nm = app.getSystemService(NotificationManager::class.java) ?: return false
+        if (nm.activeNotifications.none { it.id == handle.id }) return false
+        nm.notify(handle.id, build(app, event, handle, onlyAlertOnce = true))
+        return true
+    }
+
+    private fun build(app: Context, event: GameEvent, handle: Handle, onlyAlertOnce: Boolean): Notification {
         val content = content(app, event)
-        val id = nextId.incrementAndGet()
-        val builder = Notification.Builder(app, content.channel)
+        return Notification.Builder(app, content.channel)
             .setSmallIcon(R.drawable.ic_stat_puck)
             .setContentTitle(content.title)
             .setContentText(content.text)
             .setCategory(Notification.CATEGORY_EVENT)
             .setAutoCancel(true)
             .setShowWhen(true)
-            .setWhen(System.currentTimeMillis())
-            .setContentIntent(openIntent(app, event.game.id, id))
-        nm.notify(id, builder.build())
-        return true
+            .setWhen(handle.whenMs)
+            .setOnlyAlertOnce(onlyAlertOnce)
+            .setContentIntent(openIntent(app, event.game.id, handle.id))
+            .build()
     }
 
     private class Content(val channel: String, val title: String, val text: String)
@@ -125,11 +149,15 @@ object Notifier {
     private fun sideName(g: WatchedGame, side: Side): String = if (side == Side.HOME) g.homeName else g.awayName
 
     /**
-     * TODO(scorer): the overlays carry scores only, so no scorer name is shown. When the Worker gets a goal feed (the web app
-     * already shows scorers on the match page from /api/shl/game and /api/nhl/game), look the goal up here and return
-     * "<scorer> (<assist>)" for [GameEvent.Goal]; the text below then becomes "<team> scored: <scorer>".
+     * The scorer and the elapsed game time of a goal ("Janne Kuokkanen (35:53)"), when the live stream has told them. The overlays carry scores
+     * only, so a goal that only an overlay has seen (the stream was down or slower) is shown without. Other events have no such line.
      */
-    private fun scorerLine(event: GameEvent): String? = null
+    private fun scorerLine(event: GameEvent): String? {
+        if (event !is GameEvent.Goal) return null
+        val name = event.scorer ?: return null
+        val at = event.gameSec?.let { " (" + GameClock.format(it) + ")" } ?: ""
+        return name + at
+    }
 
     private fun withScorer(text: String, event: GameEvent): String {
         val scorer = scorerLine(event)

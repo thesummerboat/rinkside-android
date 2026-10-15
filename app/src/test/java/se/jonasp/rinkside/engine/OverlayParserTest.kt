@@ -107,6 +107,11 @@ class OverlayParserTest {
         assertEquals(2, ended.home)
         assertEquals(3, ended.away)
         assertTrue(obs.getValue("shl-s3fwiszzmr").shootout)
+        // the elapsed game time (period 2, 06:30), which orders an overlay reading against a stream message of the same game
+        assertEquals(1200 + 6 * 60 + 30, live.gameSec)
+        assertEquals(2 * 1200 + 1200, obs.getValue("shl-emdl6a38ir").gameSec) // the break after period 3
+        assertNull(obs.getValue("shl-h015c0se1o").gameSec) // not started: no clock
+        assertFalse(live.fromStream)
     }
 
     @Test

@@ -122,7 +122,8 @@ object OverlayParser {
             val shootout = ls == "Shootout" || (state == GameState.LIVE && !game.playoff && period == 5)
             // The feed has no decision field: the web app derives it from the period (shl-live.js shlLiveParse); so do we.
             val decision = if (state == GameState.FINISHED) deriveDecision(period, game.playoff) else null
-            out.add(Observation(game.id, state, score.first, score.second, period, decision, shootout, readAt))
+            val gameSec = GameClock.elapsed(period, Json.str(e, "clock"))
+            out.add(Observation(game.id, state, score.first, score.second, period, decision, shootout, readAt, gameSec))
         }
         return out
     }

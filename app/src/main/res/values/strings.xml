@@ -71,6 +71,11 @@
     <string name="watch_no_alarm">Next wake-up: none</string>
     <string name="watch_last_poll">Last check: %1$s</string>
     <string name="watch_never">Last check: never</string>
+    <string name="stream_off">Live stream: off (it is used while a followed SHL game is on)</string>
+    <string name="stream_connecting">Live stream: connecting</string>
+    <string name="stream_connected">Live stream: connected (last message about a followed game: %1$s)</string>
+    <string name="stream_no_message">none yet</string>
+    <string name="stream_waiting">Live stream: reconnecting (attempt %1$d, next try %2$s)</string>
     <string name="btn_start_watch">Start watching now</string>
     <string name="btn_stop_watch">Stop watching</string>
     <string name="toast_watch_started">Watching started</string>

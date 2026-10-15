@@ -71,6 +71,11 @@
     <string name="watch_no_alarm">Nästa väckning: ingen</string>
     <string name="watch_last_poll">Senaste kontroll: %1$s</string>
     <string name="watch_never">Senaste kontroll: aldrig</string>
+    <string name="stream_off">Direktström: av (används medan en följd SHL-match pågår)</string>
+    <string name="stream_connecting">Direktström: ansluter</string>
+    <string name="stream_connected">Direktström: ansluten (senaste meddelande om en följd match: %1$s)</string>
+    <string name="stream_no_message">inget ännu</string>
+    <string name="stream_waiting">Direktström: ansluter igen (försök %1$d, nästa %2$s)</string>
     <string name="btn_start_watch">Starta bevakning nu</string>
     <string name="btn_stop_watch">Stoppa bevakning</string>
     <string name="toast_watch_started">Bevakningen startade</string>

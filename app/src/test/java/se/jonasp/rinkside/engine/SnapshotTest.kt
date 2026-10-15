@@ -73,6 +73,35 @@ class SnapshotTest {
     }
 
     @Test
+    fun memoryJsonKeepsTheStreamTimeTheGameTimeAndTheAnnouncedLines() {
+        val map = mapOf(
+            "a" to GameMemory(GameState.LIVE, 2, 1, 1000L, false, 5000L, 1920, setOf("1-0", "1-1", "2-1"), setOf("2-1>1-1")),
+            "b" to GameMemory(GameState.FINISHED, 3, 2, 3000L, true),
+        )
+        val text = MemoryJson.write(map)
+        assertEquals(map, MemoryJson.read(text))
+        // a game without any of the four new facts is written as 0.1.3 wrote it
+        val plain = JSONObject(text).getJSONObject("b")
+        assertEquals(setOf("s", "h", "a", "r", "so"), plain.keys().asSequence().toSet())
+    }
+
+    @Test
+    fun memoryWrittenByAnOlderVersionStillReads() {
+        val old = "{\"g1\":{\"s\":\"LIVE\",\"h\":1,\"a\":0,\"r\":1000,\"so\":false}}"
+        assertEquals(mapOf("g1" to GameMemory(GameState.LIVE, 1, 0, 1000L, false)), MemoryJson.read(old))
+    }
+
+    @Test
+    fun oddAnnouncedLinesAreDropped() {
+        val text = "{\"g1\":{\"s\":\"LIVE\",\"h\":1,\"a\":0,\"r\":1000,\"so\":false,\"gl\":[\"1-0\",\"x\",5,\"1-0>0-0\"],\"dl\":[\"1-0>0-0\",\"1-0\"],\"gs\":-4,\"sa\":\"soon\"}}"
+        val m = MemoryJson.read(text).getValue("g1")
+        assertEquals(setOf("1-0"), m.goalLines)
+        assertEquals(setOf("1-0>0-0"), m.dropLines)
+        assertNull(m.gameSec)
+        assertNull(m.streamAtMs)
+    }
+
+    @Test
     fun memoryJsonRoundTripsAndPrunes() {
         val map = mapOf(
             "a" to GameMemory(GameState.LIVE, 1, 0, 1000L, false),

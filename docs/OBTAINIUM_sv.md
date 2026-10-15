@@ -76,7 +76,7 @@ Uppdateringen går bara att installera om den är signerad med samma nyckel som 
 
 - **Inga notiser alls.** Kolla på skärmen *Notiser* att notiser är tillåtna och att du följer minst ett lag. Öppna Rinkside en gång efter att du följt laget, så att appen får veta det.
 - **Notisen kommer sent eller uteblir.** Slå på *Undanta från batterioptimering* och stäng av batterisparläge under matchen. Vissa telefontillverkare (Xiaomi, Huawei, OnePlus, Samsung m.fl.) stoppar bakgrundsappar extra hårt. Lås gärna appen i listan över senaste appar.
-- **Bevakningen hinner inte med.** Appen kollar var 15:e sekund, och bara medan en match med ett följt lag pågår. Det går inte snabbare än så.
+- **Bevakningen hinner inte med.** Appen kollar var 15:e sekund, och bara medan en match med ett följt lag pågår. För SHL-matcher lyssnar den dessutom på SHL:s öppna livesändning, så mål kommer inom några sekunder. För övriga ligor och NHL går det inte snabbare än så.
 - **"Appen är inte installerad" / "Signaturen stämmer inte" vid uppdatering.** Det betyder att den nya versionen är signerad med en annan nyckel än den installerade. Avinstallera Rinkside och installera igen (följda lag och inställningar nollställs).
 
 ## För den som släpper nya versioner

@@ -12,9 +12,13 @@ import android.os.Looper
 import android.os.PowerManager
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import se.jonasp.rinkside.engine.GameEvent
 import se.jonasp.rinkside.engine.GameTracker
 import se.jonasp.rinkside.engine.Overlay
 import se.jonasp.rinkside.engine.OverlayParser
+import se.jonasp.rinkside.engine.ScorerInfo
+import se.jonasp.rinkside.engine.StreamFeed
+import se.jonasp.rinkside.engine.StreamPlan
 import se.jonasp.rinkside.engine.WatchPlan
 import se.jonasp.rinkside.engine.WatchedGame
 
@@ -22,8 +26,12 @@ import se.jonasp.rinkside.engine.WatchedGame
  * Foreground service that follows the games of the followed teams while they are on.
  *
  * Every 15 s it reads only the overlays its games need (nhl-today, shl-today, swe-today, shl-schedule-status), hands the answers to the
- * detection engine (se.jonasp.rinkside.engine) and posts what the engine reports. It stops itself when no followed game is in its window
- * (10 minutes before the start until the game is over, at most 4 hours after the start) and sets the alarm for the next game.
+ * detection engine (se.jonasp.rinkside.engine) and posts what the engine reports. While a followed SHL game is in its window it also holds
+ * the SHL's public live stream open ([LiveStream], its own thread): a goal arrives there within seconds, long before the Worker's overlay
+ * has it, and goes through the same engine, so a goal is announced once whichever of the two sees it first. The overlays stay as they were:
+ * they are the fallback when the stream is down, and the only source for NHL and the lower Swedish leagues.
+ * It stops itself when no followed game is in its window (10 minutes before the start until the game is over, at most 4 hours after the start)
+ * and sets the alarm for the next game.
  */
 class GameWatchService : Service() {
 
@@ -93,6 +101,20 @@ class GameWatchService : Service() {
     @Volatile
     private var shownText: String = ""
 
+    /** Ids of every game in the snapshot: what [Store.saveMemory] keeps, read by the stream thread too. */
+    @Volatile
+    private var knownGameIds: Set<String> = emptySet()
+
+    @Volatile
+    private var stream: LiveStream? = null
+
+    /** Goal notifications that were posted without a scorer, by game and score line, so that a name that arrives later can be added. */
+    private class PostedGoal(val handle: Notifier.Handle, val event: GameEvent.Goal)
+
+    private val postedGoals = object : LinkedHashMap<String, PostedGoal>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PostedGoal>?): Boolean = size > 24
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -121,6 +143,7 @@ class GameWatchService : Service() {
     override fun onDestroy() {
         stopRequested = true
         stopLatch.countDown()
+        stream?.stop()
         releaseWakeLock()
         running = false
         super.onDestroy()
@@ -131,6 +154,9 @@ class GameWatchService : Service() {
     private fun loop() {
         val app = applicationContext
         val tracker = GameTracker(Store.memory(app))
+        val feed = StreamFeed(tracker)
+        val liveStream = LiveStream(app, feed) { result -> onStreamResult(tracker, feed, result) }
+        stream = liveStream
         val states = HashMap<Overlay, PollState>()
         var lastWatchdog = 0L
         var crashes = 0
@@ -146,6 +172,8 @@ class GameWatchService : Service() {
                     val games = Store.snapshot(app)?.games ?: emptyList()
                     val active = WatchPlan.activeGames(games, tracker.memory(), now, Store.leadMs(app, now))
                     if (active.isEmpty()) break
+                    knownGameIds = games.map { it.id }.toSet()
+                    liveStream.update(StreamPlan.watchedGames(active))
                     showWatchNotification(active)
                     if (now - lastWatchdog >= WATCHDOG_REFRESH_MS) {
                         Scheduler.scheduleWatchdog(app, now + WATCHDOG_AFTER_MS)
@@ -155,7 +183,7 @@ class GameWatchService : Service() {
                     var nextWake = now + WatchPlan.POLL_MS
                     for (overlay in WatchPlan.overlaysFor(active, now)) {
                         val state = states.getOrPut(overlay) { PollState() }
-                        if (now >= state.nextAtMs) pollOnce(overlay, state, games, tracker)
+                        if (now >= state.nextAtMs) pollOnce(overlay, state, games, tracker, feed)
                         nextWake = minOf(nextWake, state.nextAtMs)
                     }
                     crashes = 0
@@ -168,12 +196,13 @@ class GameWatchService : Service() {
                 }
             }
         } finally {
+            liveStream.stop()
             Store.saveMemory(app, tracker.memory(), (Store.snapshot(app)?.games ?: emptyList()).map { it.id }.toSet())
             if (!stopRequested) finishAndStop()
         }
     }
 
-    private fun pollOnce(overlay: Overlay, state: PollState, games: List<WatchedGame>, tracker: GameTracker) {
+    private fun pollOnce(overlay: Overlay, state: PollState, games: List<WatchedGame>, tracker: GameTracker, feed: StreamFeed) {
         val app = applicationContext
         val response = try {
             OverlayHttp.get(BuildConfig.BASE_URL, overlay.path)
@@ -188,10 +217,7 @@ class GameWatchService : Service() {
                 val events = tracker.process(games, observations, after)
                 // Save what was seen BEFORE posting: if the process dies in between, a notification is lost rather than repeated.
                 Store.saveMemory(app, tracker.memory(), games.map { it.id }.toSet())
-                for (event in events) {
-                    Store.log(app, Notifier.logLine(event))
-                    Notifier.post(app, event)
-                }
+                announce(feed, events, "")
                 state.failures = 0
                 state.nextAtMs = after + WatchPlan.pollIntervalMs(overlay)
                 Store.setLastPoll(app, after, overlay.path + " ok, " + observations.size + " game(s)")
@@ -214,6 +240,42 @@ class GameWatchService : Service() {
             Store.log(app, overlay.path + " failed (" + state.failures + "): " + reason)
         }
         Store.setLastPoll(app, now, overlay.path + " failed: " + reason)
+    }
+
+    // ---- the live stream (its thread) ----
+
+    /** What the stream made of one event: save, then post, like the poll path does; a scorer that arrives after its goal is added to it. */
+    private fun onStreamResult(tracker: GameTracker, feed: StreamFeed, result: StreamFeed.Result) {
+        val app = applicationContext
+        if (result.changed || result.events.isNotEmpty()) {
+            // Save what was seen BEFORE posting (see pollOnce).
+            Store.saveMemory(app, tracker.memory(), knownGameIds)
+        }
+        result.scorer?.let { addScorerToPostedGoal(it) }
+        announce(feed, result.events, "stream: ")
+    }
+
+    /** Logs and posts [events]; the goals among them are named when the stream has said who scored. [via] prefixes the log line. */
+    private fun announce(feed: StreamFeed, events: List<GameEvent>, via: String) {
+        val app = applicationContext
+        for (raw in events) {
+            val event = feed.enrich(raw)
+            Store.log(app, via + Notifier.logLine(event))
+            val handle = Notifier.postEvent(app, event) ?: continue
+            if (event is GameEvent.Goal && event.scorer == null) {
+                synchronized(postedGoals) { postedGoals[event.game.id + "|" + event.line] = PostedGoal(handle, event) }
+            }
+        }
+    }
+
+    /** The scorer's message came after the goal had been announced: write the name on the notification, if it is still there. */
+    private fun addScorerToPostedGoal(info: ScorerInfo) {
+        val posted = synchronized(postedGoals) { postedGoals.remove(info.gameId + "|" + info.line) } ?: return
+        if (posted.event.side != info.side) return
+        val named = posted.event.copy(scorer = info.scorer, gameSec = info.gameSec)
+        if (Notifier.update(applicationContext, posted.handle, named)) {
+            Store.log(applicationContext, "stream: " + info.scorer + " added to the goal " + info.line)
+        }
     }
 
     private fun sleepUntil(wakeAtMs: Long) {
@@ -268,7 +330,8 @@ class GameWatchService : Service() {
     }
 
     /**
-     * The CPU must stay awake between two polls: with the screen off a sleeping device would otherwise stop the 15 s timer.
+     * The CPU must stay awake between two polls: with the screen off a sleeping device would otherwise stop the 15 s timer, and the live
+     * stream's reader thread would sleep through the goals it is there for. The one lock serves both.
      * The lock is short (10 minutes) and renewed by the loop, so it cannot outlive a dead loop for long.
      */
     @Synchronized

@@ -150,8 +150,14 @@ fun unwrapJsResult(value: String?): String? {
     }
 }
 
-/** Persistence of [GameMemory] as one JSON object: {gameId: {s,h,a,r,so}}. */
+/**
+ * Persistence of [GameMemory] as one JSON object: {gameId: {s,h,a,r,so, sa,gs,gl,dl}}. The last four (stream time, game time, announced
+ * score lines, announced drops) are left out when empty, so memory written by 0.1.3 and older reads back as it is.
+ */
 object MemoryJson {
+    private val GOAL_LINE = Regex("^\\d{1,2}-\\d{1,2}$")
+    private val DROP_LINE = Regex("^\\d{1,2}-\\d{1,2}>\\d{1,2}-\\d{1,2}$")
+
     fun write(map: Map<String, GameMemory>): String {
         val o = JSONObject()
         for ((id, m) in map) {
@@ -161,6 +167,10 @@ object MemoryJson {
             if (m.away != null) e.put("a", m.away)
             e.put("r", m.readAtMs)
             e.put("so", m.shootout)
+            if (m.streamAtMs != null) e.put("sa", m.streamAtMs)
+            if (m.gameSec != null) e.put("gs", m.gameSec)
+            if (m.goalLines.isNotEmpty()) e.put("gl", JSONArray(m.goalLines.toList()))
+            if (m.dropLines.isNotEmpty()) e.put("dl", JSONArray(m.dropLines.toList()))
             o.put(id, e)
         }
         return o.toString()
@@ -184,7 +194,21 @@ object MemoryJson {
                 away = Json.int(e.opt("a"), 0, 99),
                 readAtMs = Json.long(e.opt("r")) ?: 0L,
                 shootout = Json.bool(e, "so") ?: false,
+                streamAtMs = Json.long(e.opt("sa")),
+                gameSec = Json.int(e.opt("gs"), 0, 100_000),
+                goalLines = lines(Json.arr(e, "gl"), GOAL_LINE),
+                dropLines = lines(Json.arr(e, "dl"), DROP_LINE),
             )
+        }
+        return out
+    }
+
+    private fun lines(a: JSONArray?, shape: Regex): Set<String> {
+        val out = LinkedHashSet<String>()
+        if (a == null) return out
+        for (i in 0 until minOf(a.length(), Detector.MAX_CUES)) {
+            val s = a.opt(i) as? String ?: continue
+            if (shape.matches(s)) out.add(s)
         }
         return out
     }
